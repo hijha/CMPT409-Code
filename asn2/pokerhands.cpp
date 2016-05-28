@@ -3,23 +3,23 @@
 #include<stdio.h>
 #include<fstream>
 #include<map>
-#include <stdint.h>
 
 using namespace std;
 
 int get_card_value(string);
-int get_hand_rank(int[]);
-//int check_pairs(int[]);
-int check_pairs(int[], int[]);
-int count_val(int[], int&);
+void get_hand_rank(int[], int[]);
+int check_card_val(int[], int[]);
 bool check_straight(int[]);
 bool check_flush(int[]);
-string high_card(int[], int[], int);
+void find_highest_card(int[]);
 
 int main() {
-    ifstream myfile ("input.txt");
+//    ifstream myfile ("input.txt");
     string line;
-    while(getline(myfile, line)) {
+    while(getline(cin, line)) {
+        if (line == "") {
+            break;
+        }
         int white[5];
         int black[5];
         int i = 0;
@@ -37,46 +37,10 @@ int main() {
             }
             i++;
         }
-        int high_cards_black[5];
-        int high_cards_white[5];
-        for (int i = 0; i < 5; i++) {
-            high_cards_black[i] = -1;
-            high_cards_white[i] = -1;
-        }
-        int black_rank = check_pairs(black, high_cards_black);
-        int white_rank = check_pairs(white, high_cards_white);
-        cout << "black rank = " << black_rank << endl;
-        cout << "white rank = " << white_rank << endl;
-        for (int i = 0; i < 5; i++) {
-            cout <<  high_cards_black[i] << " ";
-        }
-        cout << endl;
-        for (int i = 0; i < 5; i++) {
-            cout << high_cards_white[i] << " ";
-        }
-        cout << endl;
-        if (black_rank > white_rank) {            
-            cout << "Black Wins." << endl;
-        } else if (white_rank > black_rank) {
-            cout << "White wins." << endl;
-        } else {
-            bool winner = false;
-            for (int i = 0; i < 5; i++) {
-                if (high_cards_black[i] > high_cards_white[i]) {
-                    cout << "Black Wins." << endl;
-                    winner = true;
-                    break;
-                } else if (high_cards_white[i] > high_cards_black[i]) {
-                    cout << "White Wins." << endl;
-                    winner = true;
-                    break;
-                }
-            }
-            if (!winner) {
-                cout << "Tie." << endl;
-            }
-        }
+        get_hand_rank(black, white);
     }
+    
+    return 0;
 }
 
 int get_card_value (string string_val) {
@@ -113,28 +77,83 @@ int get_card_value (string string_val) {
     return total_val;
 }
 
-int get_hand_rank(int array[]) {
+void get_hand_rank(int black[], int white[]) {
     int rank = 0;
-    int high_value = 0;
-    int val = count_val(array, high_value);
-    cout << val << " " << high_value << endl;
-/*    if (val > rank) {
-        rank = val;
+    int high_cards_black[5];
+    int high_cards_white[5];
+    for (int i = 0; i < 5; i++) {
+        high_cards_black[i] = -1;
+        high_cards_white[i] = -1;
     }
-    bool straight = check_straight(array);
-    bool flush = check_flush(array);
-    if (straight && flush) {
-        rank = 8;
-    } else if (flush && rank < 5) {
-        rank = 5;
-    } else if (straight && rank < 4){
-        rank = 4;
+    int black_rank = check_card_val(black, high_cards_black);
+    int white_rank = check_card_val(white, high_cards_white);
+    
+    bool black_flush = check_flush(black);
+    bool black_straight = check_straight(black);
+    bool white_flush = check_flush(white);
+    bool white_straight = check_straight(white);
+    
+    if (black_flush) {
+        if (black_straight) {
+            black_rank = 8;
+        } else {
+            if (black_rank < 5) {
+                black_rank = 5;
+            }
+        }
+    } else if (black_straight && black_rank < 4) {
+        black_rank = 4;
     }
-*/
-    return rank;
+
+    if (white_flush) {
+        if (white_straight) {
+            white_rank = 8;
+        } else {
+            if (white_rank < 5) {
+                white_rank = 5;
+            }
+        }
+    } else if (white_straight && white_rank < 4) {
+        white_rank = 4;
+    }
+    if (black_rank > white_rank) {            
+        cout << "Black wins." << endl;
+    } else if (white_rank > black_rank) {
+        cout << "White wins." << endl;
+    } else {
+        if (black_rank == 4 || black_rank == 5 || black_rank ==8) {
+            find_highest_card(high_cards_black);
+            find_highest_card(high_cards_white);
+        }
+        bool winner = false;        
+        for (int i = 0; i < 5; i++) {
+            if (high_cards_black[i] > high_cards_white[i]) {
+                cout << "Black wins." << endl;
+                winner = true;
+                break;
+            } else if (high_cards_white[i] > high_cards_black[i]) {
+                cout << "White wins." << endl;
+                winner = true;
+                break;
+            }
+        }
+        if (!winner) {
+            cout << "Tie." << endl;
+        }
+    }
 }
 
-int check_pairs(int array[], int high_card[]) {
+void get_high_card(map<int, int> m, int high_card[]) {
+    map<int,int>::iterator it = m.end();
+    int i = 0;
+    while (i != 5) {
+        it--;
+        high_card[i] = it->first;
+        i++;
+    }
+}
+
+int check_card_val(int array[], int high_card[]) {
     int rank = 0;
     map<int, int> m;
     for (int i = 0; i < 5; i++) {
@@ -199,60 +218,12 @@ int check_pairs(int array[], int high_card[]) {
                 }
                 high_card[i] = it->first;
             } 
+        } else if (size == 5) {
+            get_high_card(m, high_card);
+            break;
         }
         if (it == m.begin()) {
             break;
-        }
-    }
-    return rank;
-}
-
-int count_val(int array[], int &high_card) {
-    int rank = 0;
-    map<int, int> m;
-    bool one_pair = false;
-    bool two_pair = false;
-    bool three_of = false;
-    for (int i = 0; i < 5; i++) {
-        int card_value = array[i]%13;
-//        cout << "teting .. " << card_value << endl;
-        if (m.find(card_value) != m.end()) {
-            if (m[card_value] == 1) {
-                if (three_of) {
-                    rank = 6;
-                    return rank;
-                } else if (one_pair) {
-                    m[card_value] = 2;
-                    two_pair = true;
-                    if (card_value > high_card)
-                        high_card = card_value;
-//                    cout << "high card second pair" << high_card << endl;
-                    rank = 2;
-                } else {
-                    m[card_value] = 2;
-                    one_pair = true;
-                    high_card = card_value;
-//                    cout << "high card first pair " << high_card << endl;
-                    rank = 1;
-                }
-            } else if (m[card_value] == 2) {
-                if (two_pair) {
-                    rank = 6;
-                    high_card = card_value;
-                    return rank;
-                } else {
-                    three_of = true;
-                    rank = 3;
-                    high_card = card_value;
-                    m[card_value] = 3;
-                }
-            } else if (m[card_value] == 3) {
-                m[card_value] = 4;
-                high_card = card_value;
-                rank = 7;
-            }
-        } else {
-            m[card_value] = 1;
         }
     }
     return rank;
@@ -310,63 +281,17 @@ bool check_flush(int array[]) {
     }
 }
 
-string pair_tie_break(int black[], int white[]) {
-    map<int, int> white_map;
-    map<int, int> black_map;
-    for (int i = 0; i < 5; i++) {
-        int w_key = white[i]%13;
-        int b_key = black[i]%13;
-        if (white_map.find(w_key) != white_map.end()) {
-            int val = white_map[w_key];
-            white_map[w_key] = val+1;
-        } else {
-            white_map[w_key] = 1;
-        }
-        if (black_map.find(b_key) != black_map.end()) {
-            int val = black_map[b_key];
-            black_map[b_key] = val+1;
-        } else {
-            black_map[b_key] = 1;
-        }
-    }
-}
-
-string high_card(int black[], int white[], int size) {
-    string result = "Tie.";
+void find_highest_card(int array[]) {
     bool swapped = true;
     while (swapped) {
         swapped = false;
-        for (int i =0; i < size-1; i++) {
-            if (black[i]%13 > black[i+1]%13) {
-                int temp = black[i];
-                black[i] = black[i+1];
-                black[i+1] = temp;
+        for (int i =0; i < 4; i++) {
+            if (array[i] < array[i+1]) {
+                int temp = array[i];
+                array[i] = array[i+1];
+                array[i+1] = temp;
                 swapped = true;
             }
         }
     }
-
-    swapped = true;
-    while (swapped) {
-        swapped = false;
-        for (int i =0; i < size-1; i++) {
-            if (white[i]%13 > white[i+1]%13) {
-                int temp = white[i];
-                white[i] = white[i+1];
-                white[i+1] = temp;
-                swapped = true;
-            }
-        }
-    }
-
-    for (int i = size-1; i >= 0; i--) {
-        if (black[i]%13 > white[i]%13) {
-            result = "Black Wins.";
-            break;
-        } else if (white[i]%13 > black[i]%13) {
-            result = "White wins.";
-            break;
-        }
-    }
-    return result;
 }

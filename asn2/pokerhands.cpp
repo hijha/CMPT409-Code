@@ -14,12 +14,8 @@ bool check_flush(int[]);
 void find_highest_card(int[]);
 
 int main() {
-//    ifstream myfile ("input.txt");
     string line;
     while(getline(cin, line)) {
-        if (line == "") {
-            break;
-        }
         int white[5];
         int black[5];
         int i = 0;
@@ -230,16 +226,13 @@ int check_card_val(int array[], int high_card[]) {
 }
 
 bool check_straight(int array[]) {
-    int min = 100;
-    int max = -1;
+    for (int i = 0; i < 5; i++) {
+        array[i] = array[i]%13;
+    }
     bool swapped = true;
     while (swapped) {
         swapped = false;
         for (int i =0; i < 4; i++) {
-            if (array[i] < min)
-                min = array[i];
-            if (array[i] > max)
-                max = array[i];
             if (array[i] > array[i+1]) {
                 int temp = array[i];
                 array[i] = array[i+1];
@@ -248,19 +241,10 @@ bool check_straight(int array[]) {
             }
         }
     }
-    if (array[4] > max) 
-        max = array[4];
-    if (array[4] < min) 
-        min = array[4];
-
-    if ((min >= 0 && max < 13) || (min > 12 && max < 26) || (min > 25 && max < 39) || (min > 38 && max < 51)) {
-        for (int i =0; i < 4; i++) {
-            if ((array[i+1] - array[i]) != 1) {
-                return false;
-            }
+    for (int i =0; i < 4; i++) {
+        if ((array[i+1] - array[i]) != 1) {
+            return false;
         }
-    } else {
-        return false;
     }
     return true;
 }

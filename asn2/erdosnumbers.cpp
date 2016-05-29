@@ -5,95 +5,108 @@
 #include <map>
 #include <vector>
 #include <limits.h>
+#include <queue>
 
 using namespace std;
 
-void assign_ranks(vector<string>, map<string, int>&);
-void print_val(string[], int, map<string, int>);
+vector<string> get_author_list(string line);
+void create_tree(vector<string>, map<string, vector<string> >&);
+void assign_rank(map<string, int>&, map<string, vector<string> >);
 
 int main() {
+    map<string, vector<string> > author_tree;
+    map<string, int> author_rank;
     int scenario;
-    ifstream myfile("input.txt");
-    myfile >> scenario;
+    cin >> scenario;
     int curr_scenario = 1;
     while (curr_scenario <= scenario) {
+        author_tree.clear();
+        author_rank.clear();
         int p, n;
-        myfile >> p;
-        myfile >> n;
+        cin >> p;
+        cin >> n;
         string line;
-        myfile.ignore(100, '\n');
-        map<string, int> author_map;
-        author_map["Erdos, P."] = 0;
-        
+        cin.ignore(100, '\n');
         while (p > 0) {
-            getline(myfile, line);
-            int colon_index = line.find(".:");
-            int start_index = 0;
-            int end_index = 0;
-            vector<string> author_list;
-            while (end_index < colon_index) {
-                end_index = line.find(".,", start_index)+1;
-                if (end_index == 0) {
-                    end_index = colon_index+1;
-                }
-                string author = line.substr(start_index, (end_index-start_index));
-                start_index = end_index+2;
-                author_list.push_back(author);
-            }
+            getline(cin, line);
+            vector<string> author_list = get_author_list(line);
+            create_tree(author_list, author_tree);
             p--;
-            assign_ranks(author_list, author_map);
         }
+        assign_rank(author_rank, author_tree);
+
         string array[n];
         int i = 0;
         while (i < n) {
-            getline(myfile, array[i]);
+            getline(cin, array[i]);
             i++;
         }
         cout << "Scenario " << curr_scenario << endl;
-        print_val(array, n, author_map);
+        for (int i = 0; i < n; i++) {
+            cout << array[i] << " ";
+            if (author_rank.find(array[i]) != author_rank.end()) {
+                cout << author_rank[array[i]];
+            } else {
+                cout << "infinity";
+            }
+            cout << endl;
+        }
         curr_scenario++;
     }
     return 0;
 }
 
-void assign_ranks(vector<string> author_list, map<string, int> &author_map) {
-    int min_rank = INT_MAX;
-    for (vector<string>::iterator it = author_list.begin(); it != author_list.end(); it++) {
-        if (author_map.find(*it) != author_map.end()) {
-            int rank = author_map[*it];
-            if (rank < min_rank) {
-                min_rank = rank;
-            }
+vector<string> get_author_list(string line) {
+    vector<string> author_list;
+    int colon_index = line.find(".:");
+    int start_index = 0;
+    int end_index = 0;
+    while (end_index < colon_index) {
+        end_index = line.find(".,", start_index)+1;
+        if (end_index == 0) {
+            end_index = colon_index+1;
         }
+        string author = line.substr(start_index, (end_index-start_index));
+        start_index = end_index+2;
+        author_list.push_back(author);
     }
-    if (min_rank == INT_MAX) {
-        min_rank = -2;
-    }
-    for (vector<string>::iterator it = author_list.begin(); it != author_list.end(); it++) {
-        if (author_map.find(*it) != author_map.end()) {
-            if(author_map[*it] > (min_rank+1)) {
-                author_map[*it] = min_rank + 1;
+    return author_list;
+}
+
+void create_tree(vector<string> author_list, map<string, vector<string> > &author_tree) {
+    for (vector<string>::iterator i = author_list.begin(); i != author_list.end(); i++) {
+        for (vector<string>::iterator j = author_list.begin(); j != author_list.end(); j++) {
+            if ((*i != *j)) {
+                if (author_tree.find(*i) == author_tree.end()) {
+                    vector<string> new_node;
+                    new_node.push_back(*j);
+                    author_tree[*i] = new_node;
+                } else {
+                    vector<string> nodes = author_tree[*i];
+                    nodes.push_back(*j);
+                    author_tree[*i] = nodes;
+                }
             }
-        } else {
-            author_map[*it] = min_rank + 1;
         }
     }
 }
 
-void print_val(string array[], int n, map<string, int> author_map) {
-    for (int i = 0; i < n; i++) {
-        cout << array[i] << " ";
-        if (author_map[array[i]] == 0) {
-            if (array[i] == "Erdos, P.") {
-                cout << 0;
-            } else {
-                cout << "infinity";
+void assign_rank(map<string, int> &author_rank, map<string, vector<string> > author_tree) {
+    author_rank["Erdos, P."] = 0;
+    queue<string> author_queue;
+    author_queue.push("Erdos, P.");
+    while (!author_queue.empty()) {
+        string author = author_queue.front();
+        author_queue.pop();
+        int rank = author_rank[author];
+        int newRank = rank+1;
+        vector<string> associated_authors = author_tree[author];
+        for (int i = 0; i < associated_authors.size(); i++) {
+            string a_author = associated_authors[i];
+            if (author_rank.find(a_author) == author_rank.end()) {
+                author_rank[a_author] = newRank;
+                author_queue.push(a_author);
             }
-        } else if (author_map[array[i]] == -1) {
-            cout << "infinity";
-        } else {
-            cout << author_map[array[i]];
         }
-        cout << endl;
     }
 }

@@ -3,14 +3,14 @@
 #include <sstream>
 #include <string.h>
 #include <vector>
-
+#include <stdlib.h>
 using namespace std;
 
 int matrix[105][105];
 int visited[105];
 string cities[105];
 vector<string> locations;
-
+int connectedPoints = 0;;
 
 void depthFirstSearch(int, int, int);
 void findPoints(int);
@@ -63,23 +63,28 @@ int main() {
     }
 }
 
-void findPoints(int size) {    
+void findPoints(int size) {
     for (int i = 1; i < size; i++) {
-        int start = i+1;
-        if (i == size-1) {
-            start = 1;
-        }
+        connectedPoints = 0;
         memset(visited, 0, sizeof(visited));
-        bool connected = true;
-        visited[i] = 1;
-        depthFirstSearch(start, size, i);
-        for (int j = 1; j < size; j++) {
-            if (!visited[j]) {
-                connected = false;
-                break;            
+        depthFirstSearch(i, size, i);
+        int totalConnectedPoints = connectedPoints;
+        
+        int start;
+        for (int l = 0; l < size; l++) {
+            if (matrix[i][l] == 1) {
+                start = l;
+                break;
             }
         }
-        if (!connected) {
+        
+        memset(visited, 0, sizeof(visited));
+        connectedPoints = 0;
+        visited[i] = 1;
+        depthFirstSearch(start, size, i);
+        int newConnectedPoints = connectedPoints;
+        bool connected = true;
+        if (totalConnectedPoints > 1 && totalConnectedPoints - newConnectedPoints != 1) {
             locations.push_back(cities[i]);
         }
     }
@@ -94,6 +99,7 @@ void depthFirstSearch(int start, int size, int index) {
     visited[start] = 1;
     for (int i = 1; i < size; i++) {
         if (i != index && matrix[start][i] && !visited[i]) {
+            connectedPoints++;
             depthFirstSearch(i, size, index);
         }
     }
